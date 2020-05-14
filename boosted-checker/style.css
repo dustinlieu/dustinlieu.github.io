@@ -7,6 +7,10 @@ html, body {
 	justify-content: center;
 }
 
+ul, ol {
+	margin-top: 5px;
+}
+
 button {
 	width: 200px;
 	height: 50px;

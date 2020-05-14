@@ -156,7 +156,6 @@ async function onDisconnect() {
 	render({status: "Disconnected"});
 }
 
-let server;
 async function onButtonClick() {
 	if (!navigator.bluetooth) {
 		render({status: "This device does not support Web Bluetooth"});
@@ -189,7 +188,7 @@ async function onButtonClick() {
 	device.addEventListener("gattserverdisconnected", onDisconnect);
 	render({status: "Connecting to device..."});
 
-	// let server;
+	let server;
 	let retries = 0;
 
 	while (retries < 3) {
@@ -208,7 +207,7 @@ async function onButtonClick() {
 			const batteryInfo = await readBatteryData(server);
 
 			render({
-				status: "Connected",
+				status: "Connected to " + device.name,
 				...deviceInfo,
 				...mdInfo,
 				...beamsSupportInfo,
