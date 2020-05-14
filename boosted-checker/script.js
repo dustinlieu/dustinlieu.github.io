@@ -28,10 +28,13 @@ const valueElementIDs = [
 	"status",
 	"md-model",
 	"md-firmware-version",
+	"md-serial-number",
 	"md-odo",
 	"md-ride-modes",
 	"md-current-ride-mode",
+	"md-beams-supported",
 	"battery-model",
+	"battery-serial-number",
 	"battery-firmware-version",
 	"battery-soc"
 ];
@@ -42,10 +45,16 @@ function render(data) {
 	}
 }
 
-const textDecoder = new TextDecoder("utf-8");
+function clearView(data) {
+	for (let i = 0; i < valueElementIDs.length; i++) {
+		document.getElementById(valueElementIDs[i]).textContent = "";
+	}
+}
 
 let serviceCache = {};
 let characteristicCache = {};
+
+const textDecoder = new TextDecoder("utf-8");
 
 async function getService(server, uuid) {
 	if (serviceCache[uuid]) {
@@ -81,12 +90,15 @@ async function readMDData(server) {
 
 	const mdService = await getService(server, "7dc55a86-c61f-11e5-9912-ba0be0483c18");
 	const mdModelValue = await getCharacteristicValue(mdService, "7dc59643-c61f-11e5-9912-ba0be0483c18");
+	const mdIDValue = await getCharacteristicValue(mdService, "7dc5bb39-c61f-11e5-9912-ba0be0483c18");
 	const mdOdoValue = await getCharacteristicValue(mdService, "7dc56594-c61f-11e5-9912-ba0be0483c18");
 	const mdRideModesValue = await getCharacteristicValue(mdService, "7dc55dec-c61f-11e5-9912-ba0be0483c18");
 	const mdCurrentRideModeValue = await getCharacteristicValue(mdService, "7dc55f22-c61f-11e5-9912-ba0be0483c18");
 
-	const model = mdModelValue.getUint8(0);
+	const mdID = textDecoder.decode(mdIDValue);
+	data["md-serial-number"] = mdID.substring(mdID.length - 9, mdID.length);
 
+	const model = mdModelValue.getUint8(0);
 	data["md-model"] = boardModels[model];
 
 	let miles = 0;
@@ -110,40 +122,74 @@ async function readMDData(server) {
 	return data;
 }
 
+async function readBeamsSupportData(server) {
+	try {
+		await getService(server, "ea32b817-d410-42e2-848a-1218201468fc");
+
+		return {"md-beams-supported": "Yes"};
+	} catch(e) {
+		return {"md-beams-supported": "No"};
+	}
+}
+
 async function readBatteryData(server) {
 	let data = {};
 
 	const batteryService = await getService(server, "65a8eaa8-c61f-11e5-9912-ba0be0483c18");
 	const batteryModelValue = await getCharacteristicValue(batteryService, "65a8f832-c61f-11e5-9912-ba0be0483c18");
+	const batterySerialValue = await getCharacteristicValue(batteryService, "65a8f834-c61f-11e5-9912-ba0be0483c18");
 	const batteryFirmwareValue = await getCharacteristicValue(batteryService, "65a8f833-c61f-11e5-9912-ba0be0483c18");
 	const batterySOCValue = await getCharacteristicValue(batteryService, "65a8eeae-c61f-11e5-9912-ba0be0483c18");
 
 	data["battery-model"] = batteryModels[batteryModelValue.getUint8(0)];
+	
+	const batterySerial = batterySerialValue.getUint32(0, true);
+	data["battery-serial-number"] = batterySerial.toString("16").toUpperCase();
+
 	data["battery-firmware-version"] = "v" + batteryFirmwareValue.getUint8(0) + "." + batteryFirmwareValue.getUint8(1) + "." + batteryFirmwareValue.getUint8(2);
 	data["battery-soc"] = batterySOCValue.getUint8(0) + "%";
 
 	return data;
 }
 
+async function onDisconnect() {
+	render({status: "Disconnected"});
+}
+
+let server;
 async function onButtonClick() {
+	if (!navigator.bluetooth) {
+		render({status: "This device does not support Web Bluetooth"});
+		return;
+	}
+
 	render({status: "Waiting for device selection"});
 
-	const device = await navigator.bluetooth.requestDevice({
-		filters: [
-			{
-				services: ["7dc55a86-c61f-11e5-9912-ba0be0483c18"]
-			}
-		],
-		optionalServices: [
-			BluetoothUUID.getService("0000180a-0000-1000-8000-00805f9b34fb"),
-			BluetoothUUID.getService("7dc55a86-c61f-11e5-9912-ba0be0483c18"),
-			BluetoothUUID.getService("65a8eaa8-c61f-11e5-9912-ba0be0483c18")
-		]
-	});
+	let device;
 
+	try {
+		device = await navigator.bluetooth.requestDevice({
+			filters: [
+				{
+					services: ["7dc55a86-c61f-11e5-9912-ba0be0483c18"]
+				}
+			],
+			optionalServices: [
+				BluetoothUUID.getService("0000180a-0000-1000-8000-00805f9b34fb"),
+				BluetoothUUID.getService("7dc55a86-c61f-11e5-9912-ba0be0483c18"),
+				BluetoothUUID.getService("65a8eaa8-c61f-11e5-9912-ba0be0483c18"),
+				BluetoothUUID.getService("ea32b817-d410-42e2-848a-1218201468fc")
+			]
+		});
+	} catch(error) {
+		render({status: "Disconnected"});
+		return;
+	}
+
+	device.addEventListener("gattserverdisconnected", onDisconnect);
 	render({status: "Connecting to device..."});
 
-	let server;
+	// let server;
 	let retries = 0;
 
 	while (retries < 3) {
@@ -158,15 +204,16 @@ async function onButtonClick() {
 
 			const deviceInfo = await readDeviceInfoData(server);
 			const mdInfo = await readMDData(server);
+			const beamsSupportInfo = await readBeamsSupportData(server);
 			const batteryInfo = await readBatteryData(server);
 
 			render({
+				status: "Connected",
 				...deviceInfo,
 				...mdInfo,
+				...beamsSupportInfo,
 				...batteryInfo
 			});
-
-			render({status: "Connected"});
 
 			break;
 		} catch(error) {
@@ -175,6 +222,4 @@ async function onButtonClick() {
 			retries++;
 		}
 	}
-
-
 }
