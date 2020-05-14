@@ -23,9 +23,7 @@ button {
 }
 
 button:hover {
-	background-color: #FFFFFF;
-	color: #000000;
-	border: 1px solid #000000;
+	background-color: #242424;
 }
 
 hr {
