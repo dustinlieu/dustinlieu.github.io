@@ -19,9 +19,7 @@ const rideModes = {
 const batteryModels = {
 	0: "UNKNOWN 0",
 	1: "B2SR",
-	2: "UNKNOWN 2",
-	3: "UNKNOWN 3",
-	4: "UNKNOWN 4"
+	2: "B2XR"
 };
 
 const valueElementIDs = [
@@ -80,7 +78,14 @@ async function readDeviceInfoData(server) {
 	const deviceInfoService = await getService(server, "0000180a-0000-1000-8000-00805f9b34fb");
 	const mdFirmwareValue = await getCharacteristicValue(deviceInfoService, "00002a26-0000-1000-8000-00805f9b34fb");
 
-	data["md-firmware-version"] = textDecoder.decode(mdFirmwareValue);
+	const mdFirmware = textDecoder.decode(mdFirmwareValue);
+
+	if (mdFirmware === "v2.7.2") {
+		document.getElementById("md-firmware-version").className = "value green";
+		data["md-firmware-version"] = mdFirmware + " (latest version)";
+	} else {
+		data["md-firmware-version"] = mdFirmware;
+	}
 
 	return data;
 }
@@ -136,17 +141,24 @@ async function readBatteryData(server) {
 	let data = {};
 
 	const batteryService = await getService(server, "65a8eaa8-c61f-11e5-9912-ba0be0483c18");
-	const batteryModelValue = await getCharacteristicValue(batteryService, "65a8f832-c61f-11e5-9912-ba0be0483c18");
 	const batterySerialValue = await getCharacteristicValue(batteryService, "65a8f834-c61f-11e5-9912-ba0be0483c18");
 	const batteryFirmwareValue = await getCharacteristicValue(batteryService, "65a8f833-c61f-11e5-9912-ba0be0483c18");
 	const batterySOCValue = await getCharacteristicValue(batteryService, "65a8eeae-c61f-11e5-9912-ba0be0483c18");
 
-	data["battery-model"] = batteryModels[batteryModelValue.getUint8(0)];
+	data["battery-model"] = batteryModels[batteryFirmwareValue.getUint8(0)];
 	
 	const batterySerial = batterySerialValue.getUint32(0, true);
 	data["battery-serial-number"] = batterySerial.toString("16").toUpperCase();
 
-	data["battery-firmware-version"] = "v" + batteryFirmwareValue.getUint8(0) + "." + batteryFirmwareValue.getUint8(1) + "." + batteryFirmwareValue.getUint8(2);
+	const batteryFirmware = "v" + batteryFirmwareValue.getUint8(0) + "." + batteryFirmwareValue.getUint8(1) + "." + batteryFirmwareValue.getUint8(2);
+	if (batteryFirmware === "v2.7.2") {
+		document.getElementById("battery-firmware-version").className = "value green";
+		data["battery-firmware-version"] = batteryFirmware + " (latest version)";
+	} else {
+		document.getElementById("battery-firmware-version").className = "value";
+		data["battery-firmware-version"] = batteryFirmware;
+	}
+
 	data["battery-soc"] = batterySOCValue.getUint8(0) + "%";
 
 	return data;
