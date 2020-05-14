@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+		<link href="./style.css" rel="stylesheet">
+	</head>
+
+	<body>
+		<div class="content">
+			<h1>Boosted Board checker</h1>
+
+			<p>
+				<strong>Requirements:</strong>
+				<ul>
+					<li>V2/V3 Boosted Board</li>
+					<li>Device with Bluetooth LE support</li>
+					<li>Chromium browser</li>
+				</ul>
+			</p>
+			<p>
+				<strong>Usage:</strong>
+				<ol>
+					<li>Put the board into pairing mode by pressing the power button quickly 5 times</li>
+					<li>Press connect button below</li>
+					<li>Select your board (it can take up to 15 seconds for it to show up)</li>
+				</ol>
+			</p>
+
+			<p>
+				<strong>Device doesn't show up in pairing window?</strong>
+				<ul>
+					<li>Refresh the page</li>
+					<li>Remove the board from your system's Bluetooth settings</li>
+					<li>Turn off your phone's Bluetooth if your board is paired to the app</li>
+				</ul>
+			</p>
+
+			<button onclick="onButtonClick()">Connect to board</button>
+
+			<div class="category">
+				<div class="line">
+					<span class="label">Status:</span>
+					<span class="value" id="status">Disconnected</span>
+				</div>
+			</div>
+
+			<div class="category">
+				<div class="line">
+					<span class="label">Motor driver model:</span>
+					<span class="value" id="md-model"></span>
+				</div>
+				<div class="line">
+					<span class="label">Motor driver firmware version:</span>
+					<span class="value" id="md-firmware-version"></span>
+				</div>
+				<div class="line">
+					<span class="label">Odometer:</span>
+					<span class="value" id="md-odo"></span>
+				</div>
+				<div class="line">
+					<span class="label">Supported ride modes:</span>
+					<span class="value" id="md-ride-modes"></span>
+				</div>
+				<div class="line">
+					<span class="label">Current ride mode:</span>
+					<span class="value" id="md-current-ride-mode"></span>
+				</div>
+			</div>
+
+			<div class="category">
+				<div class="line">
+					<span class="label">Battery model:</span>
+					<span class="value" id="battery-model"></span>
+				</div>
+				<div class="line">
+					<span class="label">Battery firmware version:</span>
+					<span class="value" id="battery-firmware-version"></span>
+				</div>
+				<div class="line">
+					<span class="label">Battery SOC:</span>
+					<span class="value" id="battery-soc"></span>
+				</div>
+			</div>
+
+			<hr>
+
+			<footer>
+				Created by Dustin Lieu <br>
+			</footer>
+		</div>
+
+		<script src="./script.js"></script>
+	</body>
+</html>

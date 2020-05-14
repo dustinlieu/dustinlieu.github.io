@@ -1,0 +1,55 @@
+html, body {
+	font-family: 'Source Code Pro', monospace;
+	background: #FFFFFF;
+	color: #000000;
+
+	display: flex;
+	justify-content: center;
+}
+
+button {
+	width: 200px;
+	height: 50px;
+
+	font-family: 'Source Code Pro', monospace;
+	font-size: 10pt;
+
+	background-color: #000000;
+	color: #FFFFFF;
+}
+
+button:hover {
+	background-color: #FFFFFF;
+	color: #000000;
+	border: 1px solid #000000;
+}
+
+hr {
+	border-top: 0.5px solid #000000;
+}
+
+footer {
+	font-size: 10pt;
+}
+
+.content {
+	width: 800px;
+}
+
+.category {
+	margin: 10px 0px 10px 0px;
+}
+
+.line {
+	display: flex;
+}
+
+.label {
+	width: 400px;
+
+	font-weight: 700;
+}
+
+.value {
+	width: 400px;
+}
