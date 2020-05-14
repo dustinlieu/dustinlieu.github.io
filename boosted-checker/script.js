@@ -151,12 +151,12 @@ async function readBatteryData(server) {
 	data["battery-serial-number"] = batterySerial.toString("16").toUpperCase();
 
 	const batteryFirmware = "v" + batteryFirmwareValue.getUint8(0) + "." + batteryFirmwareValue.getUint8(1) + "." + batteryFirmwareValue.getUint8(2);
-	if (batteryFirmware === "v2.7.2") {
+	if (batteryFirmware === "v2.5.1" || batteryFirmware === "v1.6.3") {
 		document.getElementById("battery-firmware-version").className = "value green";
 		data["battery-firmware-version"] = batteryFirmware + " (latest version)";
 	} else {
-		document.getElementById("battery-firmware-version").className = "value";
-		data["battery-firmware-version"] = batteryFirmware;
+		document.getElementById("battery-firmware-version").className = "value yellow";
+		data["battery-firmware-version"] = batteryFirmware + " (old version)";
 	}
 
 	data["battery-soc"] = batterySOCValue.getUint8(0) + "%";
