@@ -54,18 +54,19 @@ const valueElementIDs = [
 	"battery-model",
 	"battery-serial-number",
 	"battery-firmware-version",
-	"battery-soc"
+	"battery-soc",
+	"battery-cap"
 ];
 
 function render(data) {
 	for (let i = 0; i < valueElementIDs.length; i++) {
-		document.getElementById(valueElementIDs[i]).textContent = data[valueElementIDs[i]] || document.getElementById(valueElementIDs[i]).textContent;
+		document.getElementById(valueElementIDs[i]).innerHTML = data[valueElementIDs[i]] || document.getElementById(valueElementIDs[i]).textContent;
 	}
 }
 
 function clearView(data) {
 	for (let i = 0; i < valueElementIDs.length; i++) {
-		document.getElementById(valueElementIDs[i]).textContent = "";
+		document.getElementById(valueElementIDs[i]).innerHTML = "";
 	}
 }
 
@@ -104,7 +105,8 @@ async function readDeviceInfoData(server) {
 		document.getElementById("md-firmware-version").className = "value green";
 		data["md-firmware-version"] = mdFirmware + " (latest version)";
 	} else {
-		data["md-firmware-version"] = mdFirmware;
+		document.getElementById("md-firmware-version").className = "value yellow";
+		data["md-firmware-version"] = mdFirmware + " (old version)";
 	}
 
 	return data;
@@ -164,6 +166,8 @@ async function readBatteryData(server) {
 	const batterySerialValue = await getCharacteristicValue(batteryService, "65a8f834-c61f-11e5-9912-ba0be0483c18");
 	const batteryFirmwareValue = await getCharacteristicValue(batteryService, "65a8f833-c61f-11e5-9912-ba0be0483c18");
 	const batterySOCValue = await getCharacteristicValue(batteryService, "65a8eeae-c61f-11e5-9912-ba0be0483c18");
+	const batteryCapacityValue = await getCharacteristicValue(batteryService, "65a8f3c2-c61f-11e5-9912-ba0be0483c18");
+
 
 	data["battery-model"] = batteryModels[batteryFirmwareValue.getUint8(0)];
 	
@@ -180,6 +184,15 @@ async function readBatteryData(server) {
 	}
 
 	data["battery-soc"] = batterySOCValue.getUint8(0) + "%";
+
+	const batteryCapacity = batteryCapacityValue.getUint32(0, true);
+	console.log(batteryCapacity);
+	if (batteryCapacity > 3000000) {
+		data["battery-cap"] = batteryCapacity / 2000000;
+	} else {
+		data["battery-cap"] = batteryCapacity / 2400000;
+	}
+	data["battery-cap"] = data["battery-cap"].toFixed(2) + " <br>(Calculated using the formula from Boosted's app)";
 
 	return data;
 }
@@ -222,20 +235,23 @@ async function onButtonClick() {
 
 	let server;
 	let retries = 0;
+	let success = false;
 
 	while (retries < 3) {
 		try {
 			server = await device.gatt.connect();
 			await server.getPrimaryServices();
 
-			render({status: "Reading data..."});
-
 			serviceCache = {};
 			characteristicCache = {};
 
+			render({status: "Reading device info data..."});
 			const deviceInfo = await readDeviceInfoData(server);
+			render({status: "Reading motor driver data..."});
 			const mdInfo = await readMDData(server);
+			render({status: "Reading beams data..."});
 			const beamsSupportInfo = await readBeamsSupportData(server);
+			render({status: "Reading battery data..."});
 			const batteryInfo = await readBatteryData(server);
 
 			render({
@@ -246,11 +262,17 @@ async function onButtonClick() {
 				...batteryInfo
 			});
 
+			success = true;
+
 			break;
 		} catch(error) {
 			console.log("Error: " + error);
 			console.log("Retrying...");
 			retries++;
 		}
+	}
+
+	if (!success) {
+		render({status: "Failed to read data. Try troubleshooting steps above."});
 	}
 }
